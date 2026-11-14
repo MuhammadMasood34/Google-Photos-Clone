@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: backend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5434/google_photos
+    username: postgres
+    password: postgres
+
+  jpa:
+    hibernate:
+      ddl-auto: update #check the database structure
+    open-in-view: false #This setting means: collect everything your response needs while the service’s database transaction is still open.This means there is a time period for the data retrieval option of the db works .False means extract all the required data before sending response. 
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:my-test-secret-key-32-characters-long}
+    access-expiration: ${ACCESS_EXPIRATION:15m}
+    refresh-expiration: ${REFRESH_EXPIRATION:7d} 
+  cors:
+    allowed-origins: http://localhost:3000
