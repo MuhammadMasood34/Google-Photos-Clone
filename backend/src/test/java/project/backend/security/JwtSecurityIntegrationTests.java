@@ -3,6 +3,7 @@ package project.backend.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -38,10 +39,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringJUnitWebConfig({SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class,
+@SpringJUnitWebConfig({SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class, JwtService.class,
         JwtSecurityIntegrationTests.TestConfiguration.class})
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-with-at-least-32-bytes-long",
+        "app.jwt.access-expiration-ms=900000",
+        "app.jwt.refresh-expiration-ms=604800000",
         "app.cors.allowed-origins=http://localhost:3000"
 })
 class JwtSecurityIntegrationTests {
@@ -51,6 +54,9 @@ class JwtSecurityIntegrationTests {
 
     @Autowired
     private FilterRegistrationBean<JwtAuthenticationFilter> registration;
+
+    @Autowired
+    private JwtService jwtService;
 
     private MockMvc mvc;
 
@@ -86,6 +92,17 @@ class JwtSecurityIntegrationTests {
     void invalidTokenReturnsUnauthorized() throws Exception {
         mvc.perform(get("/api/photos").header("Authorization", "Bearer invalid"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void serviceGeneratedTokenAuthenticatesThroughExistingFilter() throws Exception {
+        var user = project.backend.domain.User.builder().id(UUID.randomUUID())
+                .email("issued@example.com").build();
+
+        mvc.perform(get("/api/photos")
+                        .header("Authorization", "Bearer " + jwtService.generateAccessToken(user)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(user.getEmail()));
     }
 
     @Test
