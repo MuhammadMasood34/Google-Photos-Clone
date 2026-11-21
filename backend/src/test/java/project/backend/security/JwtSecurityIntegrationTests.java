@@ -32,6 +32,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import project.backend.config.AppConfig;
 import project.backend.config.SecurityConfig;
+import project.backend.services.JwtService;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -39,8 +40,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringJUnitWebConfig({SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class, JwtService.class,
-        JwtSecurityIntegrationTests.TestConfiguration.class})
+@SpringJUnitWebConfig({ SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class, JwtService.class,
+        JwtSecurityIntegrationTests.TestConfiguration.class })
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-with-at-least-32-bytes-long",
         "app.jwt.access-expiration-ms=900000",
@@ -100,7 +101,7 @@ class JwtSecurityIntegrationTests {
                 .email("issued@example.com").build();
 
         mvc.perform(get("/api/photos")
-                        .header("Authorization", "Bearer " + jwtService.generateAccessToken(user)))
+                .header("Authorization", "Bearer " + jwtService.generateAccessToken(user)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(user.getEmail()));
     }
@@ -108,8 +109,8 @@ class JwtSecurityIntegrationTests {
     @Test
     void corsPreflightAllowsConfiguredFrontend() throws Exception {
         mvc.perform(options("/api/photos")
-                        .header("Origin", "http://localhost:3000")
-                        .header("Access-Control-Request-Method", "GET"))
+                .header("Origin", "http://localhost:3000")
+                .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));

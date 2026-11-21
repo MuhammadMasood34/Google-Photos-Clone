@@ -1,5 +1,5 @@
 //provides the token helpers ,refresh endpoint and and database checks
-package project.backend.security;
+package project.backend.services;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
