@@ -3,6 +3,7 @@ package project.backend.security;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -31,6 +32,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import project.backend.config.AppConfig;
 import project.backend.config.SecurityConfig;
+import project.backend.services.JwtService;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -38,10 +40,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringJUnitWebConfig({SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class,
-        JwtSecurityIntegrationTests.TestConfiguration.class})
+@SpringJUnitWebConfig({ SecurityConfig.class, AppConfig.class, JwtAuthenticationFilter.class, JwtService.class,
+        JwtSecurityIntegrationTests.TestConfiguration.class })
 @TestPropertySource(properties = {
         "app.jwt.secret=test-secret-with-at-least-32-bytes-long",
+        "app.jwt.access-expiration-ms=900000",
+        "app.jwt.refresh-expiration-ms=604800000",
         "app.cors.allowed-origins=http://localhost:3000"
 })
 class JwtSecurityIntegrationTests {
@@ -51,6 +55,9 @@ class JwtSecurityIntegrationTests {
 
     @Autowired
     private FilterRegistrationBean<JwtAuthenticationFilter> registration;
+
+    @Autowired
+    private JwtService jwtService;
 
     private MockMvc mvc;
 
@@ -89,10 +96,21 @@ class JwtSecurityIntegrationTests {
     }
 
     @Test
+    void serviceGeneratedTokenAuthenticatesThroughExistingFilter() throws Exception {
+        var user = project.backend.domain.User.builder().id(UUID.randomUUID())
+                .email("issued@example.com").build();
+
+        mvc.perform(get("/api/photos")
+                .header("Authorization", "Bearer " + jwtService.generateAccessToken(user)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(user.getEmail()));
+    }
+
+    @Test
     void corsPreflightAllowsConfiguredFrontend() throws Exception {
         mvc.perform(options("/api/photos")
-                        .header("Origin", "http://localhost:3000")
-                        .header("Access-Control-Request-Method", "GET"))
+                .header("Origin", "http://localhost:3000")
+                .header("Access-Control-Request-Method", "GET"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
                 .andExpect(header().string("Access-Control-Allow-Credentials", "true"));

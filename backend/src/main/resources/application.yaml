@@ -19,7 +19,7 @@ spring:
 app:
   jwt:
     secret: ${JWT_SECRET:my-test-secret-key-32-characters-long}
-    access-expiration: ${ACCESS_EXPIRATION:15m}
-    refresh-expiration: ${REFRESH_EXPIRATION:7d} 
+    access-expiration-ms: ${ACCESS_EXPIRATION_MS:900000} # 15 minutes
+    refresh-expiration-ms: ${REFRESH_EXPIRATION_MS:604800000} # 7 days
   cors:
     allowed-origins: http://localhost:3000
